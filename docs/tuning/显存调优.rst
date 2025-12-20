@@ -268,6 +268,27 @@ MM内置的模型如qwen2.5VL、OpenSoraPlan1.3支持开启模型切分，详情
 - 收益：显著降低主干模型前反向计算动态显存峰值。
 - 代价：增加了计算开销，完全重计算场景下，前向计算量翻倍。
 
+梯度累积
+^^^^^^^
+
+micro batch size扩大时，一个step可以训练多个数据，激活值占用会相应加大。
+梯度累积将一个global batch分成多个micro batches，一个step只处理一个micro batch，并将梯度累积起来。
+可以实现使用较小的MBS等效于较大的MBS的单步训练数据量。
+
+可在启动脚本参数中改变GRAD_ACC_STEP、MBS控制。
+
+.. code-block:: shell
+
+    MBS=1
+    GRAD_ACC_STEP=1
+    DP=$(($WORLD_SIZE/$TP/$PP/$CP))
+    GBS=$(($MBS*$GRAD_ACC_STEP*$DP))
+    # ...
+    --micro-batch-size ${MBS} \
+    --global-batch-size ${GBS}
+
+- 收益：降低激活值显存占用。
+- 代价：一次下发的计算量变小，在FSDP场景下引入更多通信。
 
 序列并行：TP-SP/Ulysses/ring/USP
 ^^^^^^^
